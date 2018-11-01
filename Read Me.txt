@@ -1,0 +1,3 @@
+Just something I'm working on to learn webgl and to get better at javascript/html. 
+This project is just remaking project from a tutual I was reading into more of Object Oriented version of it to as a way to learn webgl and to get better with javascript.
+This was based on a tutorial, but that tutorial went down. So now I'm concentrating on Open GL instead of WebGL for now.
