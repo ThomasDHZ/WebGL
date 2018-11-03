@@ -4,18 +4,20 @@
 <title>Learning WebGL &mdash; lesson 3</title>
 <meta http-equiv="content-type" content="text/html; charset=ISO-8859-1">
 
-
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css">
 <script type="text/javascript" src="scripts/glMatrix-0.9.5.js"></script>
 <script type="text/javascript" src="scripts/webgl-utils.js"></script>
 
 
 <script id="shader-fs" type="x-shader/x-fragment">
-    precision mediump float;
+
+   precision mediump float;
 
     varying vec2 vTextureCoord;
     varying vec3 vLightWeighting;
 
     uniform sampler2D uSampler;
+	uniform vec3 GLSLColor;
 
     void main(void) {
         vec4 textureColor = texture2D(uSampler, vec2(vTextureCoord.s, vTextureCoord.t));
@@ -46,9 +48,12 @@
         gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition, 1.0);
         vTextureCoord = aTextureCoord;
 
-        if (!uUseLighting) {
+        if (!uUseLighting) 
+		{
             vLightWeighting = vec3(1.0, 1.0, 1.0);
-        } else {
+        } 
+		else 
+		{
             vec3 transformedNormal = uNMatrix * aVertexNormal;
             float directionalLightWeighting = max(dot(transformedNormal, uLightingDirection), 0.0);
             vLightWeighting = uAmbientColor + uDirectionalColor * directionalLightWeighting;
@@ -57,7 +62,35 @@
 </script>
 
 
+<script id = "DropDownHelper">
+	var SelectedItem = 0;
+	function DropDownChanged() 
+	{
+	   SelectedItem = document.getElementById("mySelect").value;
+	   SetPauseFlag(true);
+	}
+	function GetSelectedItem()
+	{
+		return SelectedItem;
+	}
+</script>
 
+<script id = "InterfaceChanged">
+	var PauseFlag = false;
+	//Pausing for a sec so that when you change the dropdown menu value. it won't accidently change a diffrent mesh.
+	function InterfaceChanged()
+	{
+		PauseFlag = true;
+	}
+	function GetPauseFlag()
+	{
+		return PauseFlag
+	}
+	function SetPauseFlag(pauseflag)
+	{
+		PauseFlag = pauseflag;
+	}
+</script>
 
 
 <script type="text/javascript">
@@ -73,7 +106,7 @@
 	
 	class Shape
 	{
-		constructor(Vertices, Position) 
+		constructor(MeshID, Vertices, Position) 
 		{
 			var textureCoords = 
 			[
@@ -86,6 +119,7 @@
 				1.0, 1.0
 			];
 		
+			this.MeshID = MeshID;
 			this.Vertices = Vertices;
 			
 			this.ShapeMatrix = mat4.create();
@@ -106,6 +140,79 @@
 			this.UsingTexture = true;
 			this.DebugFlag = false;
 		}
+		GetMeshName()
+		{
+			return this.MeshID;
+		}
+		
+		GetMeshPosVec3()
+		{
+			return this.PositionMatrix;
+		}
+		GetMeshXPos()
+		{
+			return this.PositionMatrix[0];
+		}
+		GetMeshYPos()
+		{
+			return this.PositionMatrix[1];
+		}
+		GetMeshZPos()
+		{
+			return this.PositionMatrix[2];
+		}
+		
+		SetMeshPosVec3(Position)
+		{
+			this.PositionMatrix = Position;
+		}
+		SetMeshXPos(PositionX)
+		{
+			this.PositionMatrix[0] = PositionX;
+		}
+		SetMeshYPos(PositionY)
+		{
+			this.PositionMatrix[1] = PositionY;
+		}
+		SetMeshZPos(PositionZ)
+		{
+			this.PositionMatrix[2] = PositionZ;
+		}
+		
+		GetMeshXRotationFlag()
+		{
+			return this.RotationMatrix[0];
+		}
+		GetMeshYRotationFlag()
+		{
+			return this.RotationMatrix[1];
+		}
+		GetMeshZRotationFlag()
+		{
+			return this.RotationMatrix[2];
+		}
+		SetMeshXRotationFlag(Flag)
+		{
+			this.RotationMatrix[0] = Flag;
+		}
+		SetMeshYRotationFlag(Flag)
+		{
+			this.RotationMatrix[1] = Flag;
+		}
+		SetMeshZRotationFlag(Flag)
+		{
+			this.RotationMatrix[2] = Flag;
+		}
+		
+		GetMeshRotationSpeed()
+		{
+			return this.RotationSpeed;
+		}
+		SetMeshRotationSpeed(Speed)
+		{
+			this.RotationSpeed = Speed;
+		}
+		
 		SetDebugFlag(flag)
 		{
 			this.DebugFlag = flag;
@@ -143,18 +250,6 @@
 			}
 
 			neheTexture.image.src = TextureLink;
-		}
-		MoveShape(Pos)
-		{
-			this.PositionMatrix[0] += Pos[0];
-			this.PositionMatrix[1] += Pos[1];
-			this.PositionMatrix[2] += Pos[2];
-			
-			this.DebugFlag = true;
-			if(this.DebugFlag)
-			{
-				console.log("X: " + this.PositionMatrix[0]);
-			}
 		}
 		RotateShape(Rotation)
 		{
@@ -198,6 +293,30 @@
 			this.Texture = neheTexture;
 		
 			mat4.identity(this.ShapeMatrix);
+			
+			/*this.ShapeMatrix[0] = 1;
+			this.ShapeMatrix[1] = 0;
+			this.ShapeMatrix[2] = 0;
+			this.ShapeMatrix[3] = 0;
+			
+			this.ShapeMatrix[4] = 0;
+			this.ShapeMatrix[5] = Math.cos(56);
+			this.ShapeMatrix[6] = -Math.sin(56);
+			this.ShapeMatrix[7] = 0;
+			
+			this.ShapeMatrix[8] = 0;
+			this.ShapeMatrix[9] = Math.sin(56);
+			this.ShapeMatrix[10] = Math.cos(56);
+			this.ShapeMatrix[11] = 0;
+			
+			this.ShapeMatrix[8] = 0;
+			this.ShapeMatrix[9] = 0;
+			this.ShapeMatrix[10] = 0);
+			this.ShapeMatrix[11] = 1;*/
+			//mat4.fromXRotation(this.ShapeMatrix, this.degToRad(45));
+
+			
+			
 			mat4.translate(this.ShapeMatrix, this.PositionMatrix);
 			mat4.rotate(this.ShapeMatrix, this.degToRad(this.RotationDegrees), this.RotationMatrix);
 			
@@ -228,7 +347,7 @@
 	
 	class Square extends Shape
 	{
-		constructor(Position)
+		constructor(MeshID, Position)
 		{
 			var SquareVertices = [
 			1.0,  1.0,  0.0,
@@ -236,26 +355,26 @@
 				 1.0, -1.0,  0.0,
 				-1.0, -1.0,  0.0
 			];
-			super(SquareVertices, Position)
+			super(MeshID, SquareVertices, Position)
 		}
 	}
 	
 	class Triangle extends Shape
 	{
-		constructor(Position)
+		constructor(MeshID, Position)
 		{
 			var TriangleVertices = [
 			0.0,  1.0,  0.0,
 			-1.0, -1.0,  0.0,
 			 1.0, -1.0,  0.0
 			];
-			super(TriangleVertices, Position)
+			super(MeshID, TriangleVertices, Position)
 		}
 	}
 
 	class Cube extends Shape
 	{
-		constructor(Position)
+		constructor(MeshID, Position)
 		{
 			var CubeVertices = [
             // Front face
@@ -295,7 +414,7 @@
             -1.0,  1.0, -1.0
 			];
 			
-			super(CubeVertices, Position)
+			super(MeshID, CubeVertices, Position)
 			this.IndexBuffer;
 		}
 		Buffer()
@@ -445,6 +564,7 @@
 		}
 		DrawShape(shaderProgram, CameraMatrix)
 		{
+		
 			mat4.identity(this.ShapeMatrix);
 			mat4.translate(this.ShapeMatrix, this.PositionMatrix);
 			mat4.rotate(this.ShapeMatrix, this.degToRad(this.RotationDegrees), this.RotationMatrix);
@@ -468,12 +588,12 @@
         gl.uniform1i(shaderProgram.useLightingUniform, lighting);
         if (lighting) {
 		
+		var d = new Date().getMilliseconds() / 1000;
             gl.uniform3f(
                 shaderProgram.ambientColorUniform,
-                parseFloat(document.getElementById("ambientR").value),
-                parseFloat(document.getElementById("ambientG").value),
-                parseFloat(document.getElementById("ambientB").value)
-            );
+                d,
+                d,
+                d);
 
             var lightingDirection = [
                 parseFloat(document.getElementById("lightDirectionX").value),
@@ -508,6 +628,7 @@
 			this.CameraMatrix = mat4.create();
 			this.lastTime = 0;
 			this.CameraZoom = 45;
+			this.ShaderColor;
 		}
 		initGL(canvas) 
 		{
@@ -620,6 +741,31 @@
 			this.shaderProgram.ambientColorUniform = gl.getUniformLocation(this.shaderProgram, "uAmbientColor");
 			this.shaderProgram.lightingDirectionUniform = gl.getUniformLocation(this.shaderProgram, "uLightingDirection");
 			this.shaderProgram.directionalColorUniform = gl.getUniformLocation(this.shaderProgram, "uDirectionalColor");
+	
+			/*gl.uniform3f(
+                this.shaderProgram.lightingDirectionUniform ,
+                parseFloat(document.getElementById("lightDirectionX").value),
+                parseFloat(document.getElementById("lightDirectionY").value),
+                parseFloat(document.getElementById("lightDirectionZ").value)
+            );
+			gl.uniform3f(
+                this.shaderProgram.directionalColorUniform,
+                parseFloat(document.getElementById("directionalR").value),
+                parseFloat(document.getElementById("directionalG").value),
+                parseFloat(document.getElementById("directionalB").value)
+            );*/
+			/*gl.uniform3f(
+                this.shaderProgram.ambientColorUniform,
+                parseFloat(document.getElementById("ambientR").value),
+                parseFloat(document.getElementById("ambientG").value),
+                parseFloat(document.getElementById("ambientB").value)
+            );
+			var d = new Date().getMilliseconds() / 1000;
+			alert(d);*/
+
+			//gl.Uniform4f(this.ShaderColor, 0.0f, greenValue, 0.0f, 1.0f);
+
+
 		}
 		initBuffers() 
 		{
@@ -659,7 +805,7 @@
 			var RotatingXFlag = false;
 			var RotationYFlag = false;
 			var RotationZFlag = false;
-			Geometry.RotationSpeed = document.getElementById("RotationSpeed").value;
+			//Geometry.RotationSpeed = document.getElementById("RotationSpeed").value;
 			
 			if(document.getElementById("RotateX").checked == true)
 			{
@@ -678,7 +824,7 @@
 		}
 		UpdateAmbiantLighting()
 		{
-			var lighting = document.getElementById("lighting").checked;
+			/*var lighting = document.getElementById("lighting").checked;
 			gl.uniform1i(this.shaderProgram.useLightingUniform, lighting);
 			if (lighting) 
 			{
@@ -688,7 +834,7 @@
 					parseFloat(document.getElementById("ambientG").value),
 					parseFloat(document.getElementById("ambientB").value)
 				);
-
+	
 				var lightingDirection = [
 					parseFloat(document.getElementById("lightDirectionX").value),
 					parseFloat(document.getElementById("lightDirectionY").value),
@@ -706,7 +852,8 @@
 					parseFloat(document.getElementById("directionalG").value),
 					parseFloat(document.getElementById("directionalB").value)
 				);
-			}
+				alert(gl.uniform3f);
+			}*/
 		}
 		animate() 
 		{
@@ -715,7 +862,7 @@
 			{
 				if (this.lastTime != 0) {
 					var elapsed = timeNow - this.lastTime;
-					ShapeContainer[x].RotationDegrees += (ShapeContainer[0].RotationSpeed * elapsed) / 1000.0;
+					ShapeContainer[x].RotationDegrees += (ShapeContainer[x].RotationSpeed * elapsed) / 1000.0;
 				}
 			}
 			this.lastTime = timeNow;
@@ -761,11 +908,39 @@
 	let GLCanvas = new WebGLCanvas();
 
     function Update() {
+	
+
+		UpdateInterface();
         requestAnimFrame(Update);
 		handleLoadedTexture(neheTexture); 
         GLCanvas.drawScene();
         GLCanvas.animate();
     }
+	function UpdateInterface()
+	{
+		var SelectedItem = GetSelectedItem();
+		//RotationSpeed
+		if(GetPauseFlag() == false)
+		{
+			ShapeContainer[SelectedItem].SetMeshXPos(document.getElementById("UpdateMeshPosX").value);
+			ShapeContainer[SelectedItem].SetMeshYPos(document.getElementById("UpdateMeshPosY").value);
+			ShapeContainer[SelectedItem].SetMeshZPos(document.getElementById("UpdateMeshPosZ").value);
+			ShapeContainer[SelectedItem].SetMeshRotationSpeed(document.getElementById("RotationSpeed").value);
+			//Rotation Flags not working between object.
+			ShapeContainer[SelectedItem].SetMeshXRotationFlag(document.getElementById("RotateX").checked);
+			ShapeContainer[SelectedItem].SetMeshYRotationFlag(document.getElementById("RotateY").checked);
+			ShapeContainer[SelectedItem].SetMeshZRotationFlag(document.getElementById("RotateZ").checked);
+		}
+		document.getElementById("UpdateMeshPosX").value = ShapeContainer[SelectedItem].GetMeshXPos();
+		document.getElementById("UpdateMeshPosY").value = ShapeContainer[SelectedItem].GetMeshYPos();
+		document.getElementById("UpdateMeshPosZ").value = ShapeContainer[SelectedItem].GetMeshZPos();
+		document.getElementById("RotationSpeed").value = ShapeContainer[SelectedItem].GetMeshRotationSpeed();
+		document.getElementById("RotateX").value = ShapeContainer[SelectedItem].GetMeshXRotationFlag();
+		document.getElementById("RotateY").value = ShapeContainer[SelectedItem].GetMeshYRotationFlag();
+		document.getElementById("RotateZ").value = ShapeContainer[SelectedItem].GetMeshZRotationFlag();
+
+		SetPauseFlag(false);
+	}
 
 	function handleLoadedTexture(texture) 
 	{
@@ -805,9 +980,75 @@
 		}
 		gl.bindTexture(gl.TEXTURE_2D, null);
 	}
+	
+	function onDocumentMouseDown(event) 
+	{
+		var CanvasTop = 0;
+		var CanvasLeft = 0;
+		var CanvasRight = 0;
+		var Canvas = document.getElementById('lesson03-canvas');
+		var CanvasWidth = Number(document.getElementById("UpdateCanvasWidth").value);
+		var CanvasHeight = Number(document.getElementById("UpdateCanvasHeight").value);
+		var CanvasX = 0;
+		var CanvasY = 0;
+		CanvasTop  += Canvas.offsetTop;
+		CanvasLeft += Canvas.offsetLeft;
 
+		
+		if(event.clientX >= CanvasLeft && event.clientX <= CanvasLeft + CanvasWidth)
+		{
+			if(event.clientY > CanvasTop && event.clientY < CanvasTop + CanvasHeight)
+			{
+				CanvasX = event.clientX - CanvasLeft; 
+				CanvasY = event.clientY - CanvasTop;
+				alert(CanvasX + " " + CanvasY);
+			}
+		}
+
+	}
+
+	
+	class JavaScriptDropDownList
+	{
+		constructor(DropDownID) 
+		{
+			this.DropDownID = DropDownID;
+			this.DropDownListArray = [];
+			this.SelectList = document.createElement("select");
+			this.SelectList.id = "mySelect";
+			this.DropDownID.appendChild(this.SelectList);
+		}
+		AddItem(Item)
+		{
+			this.DropDownListArray.push(Item);
+		}
+		RemoveAllItems()
+		{
+			while(this.SelectList.childElementCount != 0)
+			{
+				this.SelectList.removeChild(this.SelectList[0]);
+			}
+		}
+		PopulateList()
+		{
+			this.RemoveAllItems();
+			for (var x = 0; x < this.DropDownListArray.length; x++) 
+			{
+				var option = document.createElement("option");
+				option.value = x;
+				option.text = this.DropDownListArray[x];
+				this.SelectList.appendChild(option);
+			}
+			
+		}
+	}
+
+	
     function Main() 
 	{
+		document.addEventListener( 'mousedown', onDocumentMouseDown, false );
+
+		SetPauseFlag(true);
 		var colors = [
 			1.0, 0.0, 0.0, 1.0,
 			0.0, 1.0, 0.0, 1.0,
@@ -836,15 +1077,27 @@
             0.0, 1.0, 0.0, 1.0
         ];
 		
-		let squareing = new Cube([0,0, -7.0]);
-		let squareing2 = new Square([-4.0, 0, -7.0]);
+		let squareing = new Cube("sdf", [3,0, -7.0]);
+		let squareing2 = new Square("fsd", [-1.0, 0, -7.0]);
+		let squareing3 = new Square("fsd34", [-3.0, 0, -7.0]);
 		//let squareing3 = new Triangle([3.0, 5.0, -7.0]);
 		//let squareing4 = new Pyramid([0.0, -3.0, -7.0]);
 		//let squareing5 = new Pyramid([1.0, 0.0, -9.0]);
 		
+		let JSDropDown = new JavaScriptDropDownList(document.getElementById("MeshDropDown"));
+		JSDropDown.AddItem(squareing.GetMeshName());
+		JSDropDown.AddItem(squareing2.GetMeshName());
+		JSDropDown.AddItem(squareing3.GetMeshName());
+		JSDropDown.PopulateList();
+		
+	
 		ShapeContainer.push(squareing);
 		ShapeContainer.push(squareing2);
-		//ShapeContainer.push(squareing3);
+		ShapeContainer.push(squareing3);
+	
+
+
+	//ShapeContainer.push(squareing3);
 		//ShapeContainer.push(squareing4);
 		//ShapeContainer.push(squareing5);
 		
@@ -928,34 +1181,46 @@ canvas {
     <a href="#">Link 3</a>
   </div>
 </div>
-<div class="dropdown">
-  <button class="dropbtn">Dropdown</button>
-  <div class="dropdown-content">
-    <a href="#">Link 1</a>
-    <a href="#">Link 2</a>
-    <a href="#">Link 3</a>
-  </div>
-</div>
+<select id="mySelect4" onchange=DropDownChanged()>
+  <option value="1" >Apple</option>
+  <option value="2" )>Orange</option>
+  <option value="3">Pineapple</option>
+  <option value="4">Banana</option>
+</select>
     <a href="http://learningwebgl.com/blog/?p=239">&lt;&lt; Back to Lesson 3</a><br />
 <div>
     <canvas id="lesson03-canvas" class="RoundedBorder"></canvas>
 </div>
+	<div id="MeshDropDown" onchange="DropDownChanged()"></div>
 	<table style="border: 0; padding: 10px;">
-        <tr>
-            <td><b>Canvas Size:</b>
-            <td>Width: <input type="text" class="TextBoxRoundedBorder"  id="UpdateCanvasWidth" value="500" />
-            <td>Height: <input type="text" class="TextBoxRoundedBorder"  id="UpdateCanvasHeight" value="500" />
-			<td>Camera Zoom: <input type="text" class="TextBoxRoundedBorder"  id="UpdateCameraZoom" value="30" />
+		<tr>
+            <td><b>Mesh Position:</b>
+            <td>X: <input type="text" class="TextBoxRoundedBorder"  id="UpdateMeshPosX" value="0" />
+            <td>Y: <input type="text" class="TextBoxRoundedBorder"  id="UpdateMeshPosY" value="0" />
+			<td>Z: <input type="text" class="TextBoxRoundedBorder"  id="UpdateMeshPosZ" value="0" />
+        </tr>
+		<tr>
+            <td><b>Mesh Rotation:</b>
+            <td>X: <input type="text" class="TextBoxRoundedBorder"  id="UpdateMeshRotationX" value="0" />
+            <td>Y: <input type="text" class="TextBoxRoundedBorder"  id="UpdateMeshRotationY" value="0" />
+			<td>Z: <input type="text" class="TextBoxRoundedBorder"  id="UpdateMeshRotationZ" value="0" />
         </tr>
 		<tr>
             <td><b>Rotation:</b>
-			<td>Rotation Speed: <input type="text" class="TextBoxRoundedBorder"  id="RotationSpeed" value="30" />
-            <td>X: <input type="checkbox" id="RotateX" checked/>
-            <td>Y: <input type="checkbox"   id="RotateY" checked/>
-			<td>Z: <input type="checkbox"   id="RotateZ" checked/>
+			<td>Rotation Speed: <input type="text" class="TextBoxRoundedBorder"  onchange="InterfaceChanged()" id="RotationSpeed" value="30" />
+            <td>X: <input type="checkbox" onchange="InterfaceChanged()" id="RotateX" checked/>
+            <td>Y: <input type="checkbox" onchange="InterfaceChanged()"  id="RotateY" checked/>
+			<td>Z: <input type="checkbox" onchange="InterfaceChanged()"  id="RotateZ" checked/>
         </tr>
 	</table>
 	
+	    <tr>
+        <td><b>Canvas Size:</b>
+        <td>Width: <input type="text" class="TextBoxRoundedBorder"  id="UpdateCanvasWidth" value="500" />
+        <td>Height: <input type="text" class="TextBoxRoundedBorder"  id="UpdateCanvasHeight" value="500" />
+		<td>Camera Zoom: <input type="text" class="TextBoxRoundedBorder"  id="UpdateCameraZoom" value="30" />
+    </tr>
+		
 	<input type="checkbox" id="TextureID" checked /> Use Texture<br/>
 	<input type="checkbox" id="lighting" checked /> Use lighting<br/>
 	
